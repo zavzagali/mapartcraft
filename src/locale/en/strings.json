@@ -4,7 +4,7 @@
     "CREDITS": "Translated by: (Your Name Here)"
   },
   "HEAD-META-TAGS": {
-    "DESCRIPTION": "A fork of mapcraft with added 1.21 support litematica and other stuff, this is not official, original:https://github.com/rebane2001/mapartcraft"
+    "DESCRIPTION": "A fork of mapcraft with added 1.26.2 support litematica and other stuff, this is not official, original:https://github.com/rebane2001/mapartcraft"
   },
   "FAQ": {
     "FAQ": "FAQ",
@@ -15,7 +15,7 @@
     "VIDEO-TUTORIAL": "Video tutorial"
   },
   "DESCRIPTION": {
-    "1": "A fork of mapcraft with added 1.21 support litematica and other stuff, this is not official",
+    "1": "A fork of mapcraft with added 1.26.2 support litematica and other stuff, this is not official",
     "2": "All credits for this fork go to https://github.com/rebane2001/mapartcraft"
    },
   "BLOCK-SELECTION": {
