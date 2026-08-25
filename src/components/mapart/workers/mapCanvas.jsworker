@@ -631,12 +631,20 @@ function getMapartImageDataAndMaterials() {
     }
   }
 
-  for (const [index, value] of unnecessarySupportBlock.entries()) {
+    for (const [index, value] of unnecessarySupportBlock.entries()) {
     const row = index % 128;
     const whichMap_x = ((index - row) / 128) % optionValue_mapSize_x;
     const whichMap_y =
       ((index - row) / 128 - whichMap_x) / optionValue_mapSize_x;
-    maps[whichMap_y][whichMap_x].supportBlockCount -= value.count;
+      maps[whichMap_y][whichMap_x].supportBlockCount -= value.count;
+  }
+
+  for (const row of maps) {
+    for (const map of row) {
+      if (map.supportBlockCount < 0) {
+        map.supportBlockCount = 0;
+      }
+    }
   }
 }
 
