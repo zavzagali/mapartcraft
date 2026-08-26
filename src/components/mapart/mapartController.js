@@ -731,6 +731,28 @@ class MapartController extends Component {
     }
   };
 
+  handleExportJSONDownload = () => {
+    const downloadBlob = new Blob([this.state.jsonExportText], { type: "application/json" });
+    this.downloadBlobFile(downloadBlob, "MapartcraftPreset.json");
+  };
+
+  handleImportJSONFile = (e) => {
+    const { getLocaleString } = this.props;
+    const file = e.target.files[0];
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.setState({ jsonImportText: String(reader.result) });
+    };
+    reader.onerror = () => {
+      alert(getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-ERROR"));
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   handleImportJSONPaste = () => {
     const { getLocaleString } = this.props;
     if (navigator.clipboard && navigator.clipboard.readText) {
@@ -1113,6 +1135,9 @@ class MapartController extends Component {
                 <button type="button" onClick={this.handleExportJSONCopy}>
                   {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-COPY")}
                 </button>{" "}
+                <button type="button" onClick={this.handleExportJSONDownload}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-DOWNLOAD")}
+                </button>{" "}
                 <button type="button" onClick={this.handleExportJSONClose}>
                   {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-CLOSE")}
                 </button>
@@ -1146,6 +1171,17 @@ class MapartController extends Component {
                 autoFocus
               />
               <div style={{ textAlign: "right", marginTop: "0.5em" }}>
+                <label style={{ marginRight: "0.5em" }}>
+                  <button type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
+                    {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-FILE")}
+                  </button>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    style={{ display: "none" }}
+                    onChange={this.handleImportJSONFile}
+                  />
+                </label>
                 <button type="button" onClick={this.handleImportJSONPaste}>
                   {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-PASTE")}
                 </button>{" "}
