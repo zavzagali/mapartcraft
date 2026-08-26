@@ -150,10 +150,10 @@ class MapartController extends Component {
   }.bind(this);
 
   eventListener_paste = function (e) {
-    e.preventDefault();
-    e.stopPropagation();
     const files = e.clipboardData.files;
     if (files.length) {
+      e.preventDefault();
+      e.stopPropagation();
       const file = files[0];
       const imgUrl = URL.createObjectURL(file);
       this.loadUploadedImageFromURL(imgUrl, "mapart");
