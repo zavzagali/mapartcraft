@@ -30,6 +30,10 @@ class MapartController extends Component {
   state = {
     coloursJSON: null,
     selectedBlocks: {},
+    showingJSONExport: false,
+    jsonExportText: "",
+    showingJSONImport: false,
+    jsonImportText: "",
     optionValue_version: Object.values(SupportedVersions)[Object.keys(SupportedVersions).length - 1], // default to the latest version supported
     optionValue_modeNBTOrMapdat: MapModes.SCHEMATIC_NBT.uniqueId,
     optionValue_mapSize_x: 1,
@@ -679,6 +683,122 @@ class MapartController extends Component {
     }
   };
 
+  handleExportJSON = () => {
+    const { getLocaleString } = this.props;
+    const { coloursJSON, selectedBlocks } = this.state;
+    const blocks = [];
+    for (const [colourSetId, blockId] of Object.entries(selectedBlocks)) {
+      if (blockId === "-1") {
+        continue;
+      }
+      const block = coloursJSON[colourSetId].blocks[blockId];
+      if (block.presetIndex === "CUSTOM") {
+        blocks.push({
+          colourSetId,
+          blockId: "CUSTOM",
+          customBlock: {
+            displayName: block.displayName,
+            validVersions: block.validVersions,
+            supportBlockMandatory: block.supportBlockMandatory,
+            flammable: block.flammable,
+          },
+        });
+      } else {
+        blocks.push({ colourSetId, blockId });
+      }
+    }
+    if (blocks.length === 0) {
+      alert(getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-NONE-SELECTED"));
+      return;
+    }
+    const json = JSON.stringify({ format: "mapartcraft-json-preset", version: 1, blocks }, null, 2);
+    this.setState({ jsonExportText: json, showingJSONExport: true });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(json).catch(() => {});
+    }
+  };
+
+  handleExportJSONClose = () => {
+    this.setState({ showingJSONExport: false, jsonExportText: "" });
+  };
+
+  handleImportJSONOpen = () => {
+    this.setState({ showingJSONImport: true, jsonImportText: "" });
+  };
+
+  handleImportJSONTextChange = (e) => {
+    this.setState({ jsonImportText: e.target.value });
+  };
+
+  handleImportJSONCancel = () => {
+    this.setState({ showingJSONImport: false, jsonImportText: "" });
+  };
+
+  handleImportJSONApply = () => {
+    const { getLocaleString } = this.props;
+    const { jsonImportText, optionValue_version } = this.state;
+    let data;
+    try {
+      data = JSON.parse(jsonImportText);
+    } catch (e) {
+      alert(getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-ERROR"));
+      return;
+    }
+    if (!data || !Array.isArray(data.blocks)) {
+      alert(getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-ERROR"));
+      return;
+    }
+    const mcVersion = optionValue_version.MCVersion;
+    let customBlocks = JSON.parse(CookieManager.getCookie("mapartcraft_customBlocks"));
+    const addedCustomKeys = new Set(
+      customBlocks.map((customBlock) => customBlock[0] + "|" + customBlock[1].displayName + "|" + JSON.stringify(customBlock[1].validVersions))
+    );
+    for (const entry of data.blocks) {
+      if (entry.customBlock) {
+        const key = entry.colourSetId + "|" + entry.customBlock.displayName + "|" + JSON.stringify(entry.customBlock.validVersions);
+        if (!addedCustomKeys.has(key)) {
+          customBlocks.push([entry.colourSetId, entry.customBlock]);
+          addedCustomKeys.add(key);
+        }
+      }
+    }
+    const coloursJSON_new = this.getMergedColoursJSON(customBlocks);
+    CookieManager.setCookie("mapartcraft_customBlocks", JSON.stringify(customBlocks));
+    const selectedBlocks_new = { ...this.state.selectedBlocks };
+    for (const entry of data.blocks) {
+      const { colourSetId } = entry;
+      if (!(colourSetId in coloursJSON_new)) {
+        continue;
+      }
+      if (entry.customBlock) {
+        let blockId = "-1";
+        for (const [bid, block] of Object.entries(coloursJSON_new[colourSetId].blocks)) {
+          if (block.presetIndex === "CUSTOM" && block.displayName === entry.customBlock.displayName && mcVersion in block.validVersions) {
+            blockId = bid;
+            break;
+          }
+        }
+        selectedBlocks_new[colourSetId] = blockId;
+      } else if (entry.blockId in coloursJSON_new[colourSetId].blocks) {
+        const block = coloursJSON_new[colourSetId].blocks[entry.blockId];
+        if (mcVersion in block.validVersions) {
+          selectedBlocks_new[colourSetId] = entry.blockId;
+        }
+      }
+    }
+    this.setState({
+      coloursJSON: coloursJSON_new,
+      selectedBlocks: selectedBlocks_new,
+      currentMaterialsData: {
+        pixelsData: null,
+        maps: [[]],
+        currentSelectedBlocks: {},
+      },
+      showingJSONImport: false,
+      jsonImportText: "",
+    });
+  };
+
   URLToPreset = (encodedPreset) => {
     const { onCorruptedPreset } = this.props;
     const { coloursJSON, optionValue_version } = this.state;
@@ -944,9 +1064,74 @@ class MapartController extends Component {
           onSavePreset={this.handleSavePreset}
           onSharePreset={this.handleSharePreset}
           onGetPDNPaletteClicked={this.handleGetPDNPaletteClicked}
+          onExportJSON={this.handleExportJSON}
+          onImportJSON={this.handleImportJSONOpen}
           handleAddCustomBlock={this.handleAddCustomBlock}
           handleDeleteCustomBlock={this.handleDeleteCustomBlock}
         />
+        {this.state.showingJSONExport && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+            onClick={this.handleExportJSONClose}
+          >
+            <div
+              style={{ backgroundColor: "#222", padding: "1em", borderRadius: "0.5em", maxWidth: "90%", maxHeight: "90%", overflow: "auto" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p>{getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-CLIPBOARD-COPIED")}</p>
+              <textarea readOnly value={this.state.jsonExportText} style={{ width: "40em", height: "20em", maxWidth: "80vw" }} />
+              <div style={{ textAlign: "right", marginTop: "0.5em" }}>
+                <button type="button" onClick={this.handleExportJSONClose}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-CLOSE")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {this.state.showingJSONImport && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+            onClick={this.handleImportJSONCancel}
+          >
+            <div
+              style={{ backgroundColor: "#222", padding: "1em", borderRadius: "0.5em", maxWidth: "90%", maxHeight: "90%", overflow: "auto" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p>{getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-TITLE")}</p>
+              <textarea
+                value={this.state.jsonImportText}
+                onChange={this.handleImportJSONTextChange}
+                placeholder={getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-PLACEHOLDER")}
+                style={{ width: "40em", height: "20em", maxWidth: "80vw" }}
+                autoFocus
+              />
+              <div style={{ textAlign: "right", marginTop: "0.5em" }}>
+                <button type="button" onClick={this.handleImportJSONCancel}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-CANCEL")}
+                </button>{" "}
+                <button type="button" onClick={this.handleImportJSONApply}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-LOAD")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="sectionsPreviewSettingsMaterials">
           <MapPreview
             getLocaleString={getLocaleString}

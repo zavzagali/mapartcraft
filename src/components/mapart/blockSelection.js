@@ -71,6 +71,8 @@ class BlockSelection extends Component {
       onSavePreset,
       onSharePreset,
       onGetPDNPaletteClicked,
+      onExportJSON,
+      onImportJSON,
       handleAddCustomBlock,
       handleDeleteCustomBlock,
     } = this.props;
@@ -104,6 +106,16 @@ class BlockSelection extends Component {
         <Tooltip tooltipText={getLocaleString("BLOCK-SELECTION/PRESETS/DOWNLOAD-TT")}>
           <button type="button" onClick={onGetPDNPaletteClicked}>
             {getLocaleString("BLOCK-SELECTION/PRESETS/DOWNLOAD")}
+          </button>
+        </Tooltip>
+        <Tooltip tooltipText={getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-TT")}>
+          <button type="button" onClick={onExportJSON}>
+            {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON")}
+          </button>
+        </Tooltip>
+        <Tooltip tooltipText={getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-TT")}>
+          <button type="button" onClick={onImportJSON}>
+            {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON")}
           </button>
         </Tooltip>
       </React.Fragment>
