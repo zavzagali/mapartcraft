@@ -722,6 +722,27 @@ class MapartController extends Component {
     this.setState({ showingJSONExport: false, jsonExportText: "" });
   };
 
+  handleExportJSONCopy = () => {
+    const { getLocaleString } = this.props;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(this.state.jsonExportText).catch(() => {
+        alert(getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-ERROR"));
+      });
+    }
+  };
+
+  handleImportJSONPaste = () => {
+    const { getLocaleString } = this.props;
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard
+        .readText()
+        .then((text) => this.setState({ jsonImportText: text }))
+        .catch(() => {
+          alert(getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-ERROR"));
+        });
+    }
+  };
+
   handleImportJSONOpen = () => {
     this.setState({ showingJSONImport: true, jsonImportText: "" });
   };
@@ -1089,6 +1110,9 @@ class MapartController extends Component {
               <p>{getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-CLIPBOARD-COPIED")}</p>
               <textarea readOnly value={this.state.jsonExportText} style={{ width: "40em", height: "20em", maxWidth: "80vw" }} />
               <div style={{ textAlign: "right", marginTop: "0.5em" }}>
+                <button type="button" onClick={this.handleExportJSONCopy}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-COPY")}
+                </button>{" "}
                 <button type="button" onClick={this.handleExportJSONClose}>
                   {getLocaleString("BLOCK-SELECTION/PRESETS/EXPORT-JSON-CLOSE")}
                 </button>
@@ -1122,6 +1146,9 @@ class MapartController extends Component {
                 autoFocus
               />
               <div style={{ textAlign: "right", marginTop: "0.5em" }}>
+                <button type="button" onClick={this.handleImportJSONPaste}>
+                  {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-PASTE")}
+                </button>{" "}
                 <button type="button" onClick={this.handleImportJSONCancel}>
                   {getLocaleString("BLOCK-SELECTION/PRESETS/IMPORT-JSON-CANCEL")}
                 </button>{" "}
