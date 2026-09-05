@@ -169,6 +169,7 @@ class BlockWorld {
         this.controls.moveRight(1);
         break;
       case "e":
+      case "Shift":
         this.controls.moveUp(-1);
         break;
       case " ":
@@ -692,7 +693,7 @@ class ViewOnline3D extends Component {
           bottom: 0,
         }}
       >
-        <h3 style={{ margin: 0 }}>{`${getLocaleString("VIEW-ONLINE/CONTROLS")}: W A S D E SPACE C`}</h3>
+        <h3 style={{ margin: 0 }}>{`${getLocaleString("VIEW-ONLINE/CONTROLS")}: W A S D E SPACE SHIFT C`}</h3>
         <h3 style={{ margin: 0 }}>{`ESC ESC ${getLocaleString("VIEW-ONLINE/TO-EXIT")}`}</h3>
       </div>
     );
