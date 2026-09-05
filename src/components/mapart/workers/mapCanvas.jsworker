@@ -17,6 +17,9 @@ var optionValue_transparency;
 var optionValue_transparencyTolerance;
 var optionValue_betterColour;
 var optionValue_dithering;
+var optionValue_dithering_propagation_red;
+var optionValue_dithering_propagation_green;
+var optionValue_dithering_propagation_blue;
 
 var colourSetsToUse = []; // colourSetIds and shades to use in map
 var exactColourCache = new Map(); // for mapping RGB that exactly matches in coloursJSON to colourSetId and tone
@@ -240,11 +243,22 @@ function getMapartImageDataAndMaterials() {
   if (
     [
       DitherMethods.FloydSteinberg.uniqueId,
-      DitherMethods.MinAvgErr.uniqueId,
-      DitherMethods.Burkes.uniqueId,
-      DitherMethods.SierraLite.uniqueId,
-      DitherMethods.Stucki.uniqueId,
+      DitherMethods.FloydSteinberg_20.uniqueId,
+      DitherMethods.FloydSteinberg_24.uniqueId,
       DitherMethods.Atkinson.uniqueId,
+      DitherMethods.Atkinson_6.uniqueId,
+      DitherMethods.Atkinson_10.uniqueId,
+      DitherMethods.Atkinson_12.uniqueId,
+      DitherMethods.SierraLite.uniqueId,
+      DitherMethods.Fan.uniqueId,
+      DitherMethods.ShiauFan.uniqueId,
+      DitherMethods.ShiauFan2.uniqueId,
+      DitherMethods.JarvisJudiceNinke.uniqueId,
+      DitherMethods.MinAvgErr.uniqueId,
+      DitherMethods.Stucki.uniqueId,
+      DitherMethods.Burkes.uniqueId,
+      DitherMethods.Sierra.uniqueId,
+      DitherMethods.SierraTworow.uniqueId,
     ].includes(chosenDitherMethod.uniqueId)
   ) {
     divisor = chosenDitherMethod.ditherDivisor;
@@ -321,7 +335,12 @@ function getMapartImageDataAndMaterials() {
         }
         case DitherMethods.Bayer44.uniqueId:
         case DitherMethods.Bayer22.uniqueId:
-        case DitherMethods.Ordered33.uniqueId: {
+        case DitherMethods.Bayer33.uniqueId:
+        case DitherMethods.Bayer88.uniqueId:
+        case DitherMethods.Ordered33.uniqueId:
+        case DitherMethods.ClusterDot44.uniqueId:
+        case DitherMethods.Halftone88.uniqueId:
+        case DitherMethods.VoidAndCluster1414.uniqueId: {
           const newPixels = findClosest2ColourSetIdAndToneAndRGBTo(oldPixel, allowUp, allowDown);
           // newPixels = [shortestDistance1, shortestDistance2, newPixel1, newPixel2]
           if (
@@ -340,17 +359,32 @@ function getMapartImageDataAndMaterials() {
         }
         //Error diffusion algorithms
         case DitherMethods.FloydSteinberg.uniqueId:
+        case DitherMethods.FloydSteinberg_20.uniqueId:
+        case DitherMethods.FloydSteinberg_24.uniqueId:
         case DitherMethods.MinAvgErr.uniqueId:
         case DitherMethods.Burkes.uniqueId:
         case DitherMethods.SierraLite.uniqueId:
+        case DitherMethods.Sierra.uniqueId:
+        case DitherMethods.SierraTworow.uniqueId:
         case DitherMethods.Stucki.uniqueId:
-        case DitherMethods.Atkinson.uniqueId: {
+        case DitherMethods.Atkinson.uniqueId:
+        case DitherMethods.Atkinson_6.uniqueId:
+        case DitherMethods.Atkinson_10.uniqueId:
+        case DitherMethods.Atkinson_12.uniqueId:
+        case DitherMethods.Fan.uniqueId:
+        case DitherMethods.ShiauFan.uniqueId:
+        case DitherMethods.ShiauFan2.uniqueId:
+        case DitherMethods.JarvisJudiceNinke.uniqueId: {
           closestColourSetIdAndTone = findClosestColourSetIdAndToneAndRGBTo(oldPixel, allowUp, allowDown);
           const closestColour = colourSetIdAndToneToRGB(closestColourSetIdAndTone.colourSetId, closestColourSetIdAndTone.tone);
           canvasImageData.data[indexR] = closestColour[0];
           canvasImageData.data[indexG] = closestColour[1];
           canvasImageData.data[indexB] = closestColour[2];
-          const quant_error = [oldPixel[0] - closestColour[0], oldPixel[1] - closestColour[1], oldPixel[2] - closestColour[2]];
+          const quant_error = [
+            (oldPixel[0] - closestColour[0]) * optionValue_dithering_propagation_red / 100.0,
+            (oldPixel[1] - closestColour[1]) * optionValue_dithering_propagation_green / 100.0,
+            (oldPixel[2] - closestColour[2]) * optionValue_dithering_propagation_blue / 100.0
+          ];
 
           try {
             // ditherMatrix [0][0...2] should always be zero, and can thus be skipped
@@ -668,6 +702,9 @@ onmessage = (e) => {
   optionValue_transparencyTolerance = e.data.body.optionValue_transparencyTolerance;
   optionValue_betterColour = e.data.body.optionValue_betterColour;
   optionValue_dithering = e.data.body.optionValue_dithering;
+  optionValue_dithering_propagation_red = e.data.body.optionValue_dithering_propagation_red ?? 100;
+  optionValue_dithering_propagation_green = e.data.body.optionValue_dithering_propagation_green ?? 100;
+  optionValue_dithering_propagation_blue = e.data.body.optionValue_dithering_propagation_blue ?? 100;
 
   setupColourSetsToUse();
   setupExactColourCache();
