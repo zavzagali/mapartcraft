@@ -4,6 +4,7 @@ import Tooltip from "../tooltip";
 import MapCanvasWorker from "./workers/mapCanvas.jsworker"; // FINALLY got this to work; .js gets imported as code, anything else as URL
 
 import BackgroundColourModes from "./json/backgroundColourModes.json";
+import ColourMethods from "./json/colourMethods.json";
 import CropModes from "./json/cropModes.json";
 import DitherMethods from "./json/ditherMethods.json";
 import MapModes from "./json/mapModes.json";
@@ -282,6 +283,7 @@ class MapPreview extends Component {
         coloursJSON: coloursJSON,
         MapModes: MapModes,
         WhereSupportBlocksModes: WhereSupportBlocksModes,
+        ColourMethods: ColourMethods,
         DitherMethods: DitherMethods,
         canvasImageData: canvasImageData,
         selectedBlocks: selectedBlocks,

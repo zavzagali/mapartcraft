@@ -7,6 +7,7 @@ import BufferedNumberInput from "./bufferedNumberInput/bufferedNumberInput";
 import Tooltip from "../tooltip";
 
 import BackgroundColourModes from "./json/backgroundColourModes.json";
+import ColourMethods from "./json/colourMethods.json";
 import CropModes from "./json/cropModes.json";
 import DitherMethods from "./json/ditherMethods.json";
 import MapModes from "./json/mapModes.json";
@@ -474,7 +475,15 @@ class MapSettings extends Component {
             {":"}
           </b>
         </Tooltip>{" "}
-        <input type="checkbox" checked={optionValue_betterColour} onChange={onOptionChange_BetterColour} />
+        <select value={optionValue_betterColour} onChange={onOptionChange_BetterColour}>
+          {Object.keys(ColourMethods).map((colourMethodKey) => (
+            <option key={ColourMethods[colourMethodKey]["uniqueId"]} value={ColourMethods[colourMethodKey]["uniqueId"]}>
+              {"localeKey" in ColourMethods[colourMethodKey]
+                ? getLocaleString(ColourMethods[colourMethodKey]["localeKey"])
+                : ColourMethods[colourMethodKey]["name"]}
+            </option>
+          ))}
+        </select>
         <br />
       </React.Fragment>
     );
