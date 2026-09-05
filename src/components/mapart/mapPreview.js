@@ -9,8 +9,6 @@ import DitherMethods from "./json/ditherMethods.json";
 import MapModes from "./json/mapModes.json";
 import WhereSupportBlocksModes from "./json/whereSupportBlocksModes.json";
 
-import IMG_Null from "../../images/null.png";
-import IMG_Textures from "../../images/textures.png";
 import IMG_GridOverlay from "../../images/gridOverlay.png";
 
 import "./mapPreview.css";

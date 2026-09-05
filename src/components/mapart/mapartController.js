@@ -347,7 +347,7 @@ class MapartController extends Component {
   };
 
   isCustom3DMode() {
-    const { optionValue_modeNBTOrMapdat, optionValue_staircasing } = this.state;
+    const { optionValue_staircasing } = this.state;
     return (
       optionValue_staircasing === MapModes.SCHEMATIC_NBT.staircaseModes.CUSTOM_3D.uniqueId ||
       optionValue_staircasing === MapModes.MAPDAT.staircaseModes.CUSTOM_3D.uniqueId
@@ -910,6 +910,8 @@ class MapartController extends Component {
         document.body.style.backgroundSize="100%";
         fetch("https://derpibooru.org/api/v1/json/search/images?q=scenery,score.gte:1000,safe&sf=random&per_page=1").then(req=>req.json()).then(derp=>document.body.style.backgroundImage=`url(${derp.images[0].representations.full})`);
         return null;
+      default:
+        break;
     }
     if (!/^[0-9a-zQ-ZA-P]*$/g.test(encodedPreset)) {
       onCorruptedPreset();

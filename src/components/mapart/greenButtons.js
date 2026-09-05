@@ -155,46 +155,6 @@ class GreenButtons extends Component {
           }
           break;
         }
-        case "LITEMATIC_ARRAY": {
-          const t1 = performance.now();
-          console.log(`Created Litematic by ${(t1 - t0).toString()}ms`);
-          const { Litematic_Bytes } = e.data.body;
-          const Litematic_Bytes_gzipped = gzip(new Uint8Array(Litematic_Bytes));
-          const downloadBlob = new Blob([Litematic_Bytes_gzipped], { type: "application/octet-stream" });
-          downloadBlobFile(downloadBlob, `${uploadedImage_baseFilename}.litematic`);
-          break;
-        }
-        case "MAPDAT_BYTES": {
-          const t1 = performance.now();
-          console.log(`Created Mapdat by ${(t1 - t0).toString()}ms`);
-          numberOfSplitsCalculated++;
-          const { Mapdat_Bytes, whichMap_x, whichMap_y } = e.data.body;
-          const Mapdat_Bytes_gzipped = gzip(Mapdat_Bytes);
-          const downloadBlob = new Blob([Mapdat_Bytes_gzipped], { type: "application/x-minecraft-level" });
-          downloadBlobFile(downloadBlob, optionValue_mapdatFilenameUseId
-            ? `map_${(optionValue_mapdatFilenameIdStart + whichMap_y * optionValue_mapSize_x + whichMap_x).toString()}.dat`
-            : `${uploadedImage_baseFilename}_${whichMap_x.toString()}_${whichMap_y.toString()}.dat`);
-          break;
-        }
-        case "MAPDAT_BYTES_ZIP": {
-          const t1 = performance.now();
-          console.log(`Created Mapdat by ${(t1 - t0).toString()}ms`);
-          numberOfSplitsCalculated++;
-          const { Mapdat_Bytes, whichMap_x, whichMap_y } = e.data.body;
-          const Mapdat_Bytes_gzipped = gzip(Mapdat_Bytes);
-          zipFile.file(
-            optionValue_mapdatFilenameUseId
-              ? `map_${(optionValue_mapdatFilenameIdStart + whichMap_y * optionValue_mapSize_x + whichMap_x).toString()}.dat`
-              : `${uploadedImage_baseFilename}_${whichMap_x.toString()}_${whichMap_y.toString()}.dat`,
-            Mapdat_Bytes_gzipped
-          );
-          if (numberOfSplitsCalculated === optionValue_mapSize_x * optionValue_mapSize_y) {
-            zipFile.generateAsync({ type: "blob" }).then((content) => {
-              downloadBlobFile(content, `${uploadedImage_baseFilename}.zip`);
-            });
-          }
-          break;
-        }
         default: {
           throw new Error("Unknown worker response header");
         }
