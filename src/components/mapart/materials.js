@@ -59,16 +59,19 @@ class Materials extends Component {
   }
 
   formatMaterialCount = (count) => {
-    const numberOfStacks = Math.floor(count / 64);
+    if (count < 64) return '' + count;
+
+    const numberOfShulkers = Math.floor(count / 1728);
+    const numberOfStacks = Math.floor((count % 1728) / 64);
     const remainder = count % 64;
-    const numberOfShulkers = count / 1728;
-    return `${count.toString()}${
-      numberOfStacks !== 0
-        ? ` (${numberOfStacks.toString()}x64${remainder !== 0 ? ` + ${remainder.toString()}` : ""}${
-            numberOfShulkers >= 1 ? `, ${numberOfShulkers.toFixed(2)} SB` : ""
-          })`
-        : ""
-    }`;
+
+    const sb = numberOfShulkers > 0 ? `${numberOfShulkers} SB` : "";
+    const stacks = numberOfStacks > 0 ? `${numberOfStacks} ST` : "";
+    const items = remainder > 0 ? `${remainder}`: "";
+
+    const split = [sb, stacks, items].filter(n => n).join(' + ');
+
+    return `${count.toString()} (${split})`;
   };
 
   colourSetIdAndBlockIdFromNBTName(blockName) {
@@ -94,6 +97,87 @@ class Materials extends Component {
     return null; // if block not found
   }
 
+  nbtNameToColourSetId(colourSetId) {
+    const { coloursJSON, optionValue_version, currentMaterialsData } = this.props;
+    const colourSet = coloursJSON[colourSetId];
+    const selection = currentMaterialsData.currentSelectedBlocks[colourSetId];
+
+    if (selection < 0) return null;
+
+    const block = colourSet.blocks[selection];
+    if (!(optionValue_version.MCVersion in block.validVersions)) {
+      return null;
+    }
+    let blockNBTData = block.validVersions[optionValue_version.MCVersion];
+
+    if (typeof blockNBTData === "string") {
+      // this is of the form eg "&1.12.2"
+      blockNBTData = block.validVersions[blockNBTData.slice(1)];
+    }
+
+    return blockNBTData.NBTName.toLowerCase();
+  }
+
+  copyToClipboard(nonZeroMaterialsItems, supportBlockCount) {
+    const { optionValue_supportBlock} = this.props;
+
+    const mergedList = new Array(nonZeroMaterialsItems.length);
+
+    for (const [colourSetId, val] of Object.values(nonZeroMaterialsItems)) {
+      const mcId = this.nbtNameToColourSetId(colourSetId);
+      mergedList[mcId] = val;
+    }
+
+    mergedList[optionValue_supportBlock] = (mergedList[optionValue_supportBlock] || 0) + supportBlockCount;
+
+    const counts = Object.fromEntries(
+      Object.entries(mergedList.sort((first, second) => second - first))
+      .map(([k, v]) => [k, this.formatMaterialCount(v)]));
+
+    const NBSP = String.fromCharCode(160); //non-breaking space
+    const CRLF = String.fromCharCode(13, 10); //new line
+
+    const results = ["```"];
+
+    //calculate paddings
+    let nameMaxLength = 0;
+
+    for (const key of Object.keys(counts)) {
+      if (nameMaxLength < key.length)
+        nameMaxLength = key.length;
+    }
+
+    //insert each entry
+    for (const [key, val] of Object.entries(counts)) {
+      results.push(key.padEnd(nameMaxLength, NBSP) + " = " + val);
+    }
+
+    results.push("```");
+
+    const text = results.join(CRLF);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => this.fallbackCopyToClipboard(text));
+    } else {
+      this.fallbackCopyToClipboard(text);
+    }
+  }
+
+  fallbackCopyToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand("copy");
+    } catch (e) {
+      // clipboard unavailable (e.g. insecure context); text remains selectable nowhere, so prompt as last resort
+      window.prompt("Copy materials list:", text);
+    }
+    document.body.removeChild(textArea);
+  }
+
   render() {
     const { getLocaleString, coloursJSON, optionValue_supportBlock, currentMaterialsData, selectedBlocks, onChangeColourSetBlock } = this.props;
     const { onlyMaxPerSplit } = this.state;
@@ -111,6 +195,7 @@ class Materials extends Component {
         </Tooltip>{" "}
         <input type="checkbox" checked={onlyMaxPerSplit} onChange={this.onOnlyMaxPerSplitChange} />
         <br />
+        <button type="button" onClick={() => this.copyToClipboard(nonZeroMaterialsItems, supportBlockCount)}>{getLocaleString("MATERIALS/COPY-CLIPBOARD")}</button>
         <table id="materialtable">
           <tbody>
             <tr>

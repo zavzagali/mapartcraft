@@ -98,6 +98,16 @@ class MapartController extends Component {
       }
       cookiesPresets_updated.push(cookiesPreset_updated);
     }
+    // add new default presets which are not yet in the cookie (e.g. added in an update)
+    for (const defaultPreset of DefaultPresets) {
+      if (
+        !cookiesPresets_updated.some(
+          (preset) => preset.localeKey !== undefined && preset.localeKey === defaultPreset.localeKey
+        )
+      ) {
+        cookiesPresets_updated.push(defaultPreset);
+      }
+    }
     CookieManager.setCookie("mapartcraft_presets", JSON.stringify(cookiesPresets_updated));
     this.state.presets = cookiesPresets_updated;
 
