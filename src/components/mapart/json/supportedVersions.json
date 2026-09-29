@@ -50,5 +50,9 @@
   "1_26_2": {
     "MCVersion": "1.26.2",
     "NBTVersion": 4903
+  },
+  "1_26_3": {
+    "MCVersion": "1.26.3",
+    "NBTVersion": 5023
   }
 }
