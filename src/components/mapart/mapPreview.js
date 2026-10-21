@@ -40,7 +40,6 @@ class MapPreview extends Component {
       prevProps.optionValue_cropImage_percent_x === newProps.optionValue_cropImage_percent_x,
       prevProps.optionValue_cropImage_percent_y === newProps.optionValue_cropImage_percent_y,
       prevProps.optionValue_rotateImage === newProps.optionValue_rotateImage,
-      prevProps.optionValue_rotateImage === newProps.optionValue_rotateImage,
       prevProps.optionValue_staircasing === newProps.optionValue_staircasing,
       prevProps.effectiveToneKeys === newProps.effectiveToneKeys,
       prevProps.optionValue_preprocessingEnabled === newProps.optionValue_preprocessingEnabled,
@@ -91,6 +90,7 @@ class MapPreview extends Component {
       prevProps.preProcessingValue_backgroundColourSelect === newProps.preProcessingValue_backgroundColourSelect,
       prevProps.preProcessingValue_backgroundColour === newProps.preProcessingValue_backgroundColour,
       prevProps.uploadedImage === newProps.uploadedImage,
+      prevProps.optionValue_rotateImage === newProps.optionValue_rotateImage,
       prevProps.mapPreviewRegenerateCounter === newProps.mapPreviewRegenerateCounter,
     ];
     return (
