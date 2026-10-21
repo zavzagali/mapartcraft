@@ -39,6 +39,8 @@ class MapPreview extends Component {
       prevProps.optionValue_cropImage_zoom === newProps.optionValue_cropImage_zoom,
       prevProps.optionValue_cropImage_percent_x === newProps.optionValue_cropImage_percent_x,
       prevProps.optionValue_cropImage_percent_y === newProps.optionValue_cropImage_percent_y,
+      prevProps.optionValue_rotateImage === newProps.optionValue_rotateImage,
+      prevProps.optionValue_rotateImage === newProps.optionValue_rotateImage,
       prevProps.optionValue_staircasing === newProps.optionValue_staircasing,
       prevProps.effectiveToneKeys === newProps.effectiveToneKeys,
       prevProps.optionValue_preprocessingEnabled === newProps.optionValue_preprocessingEnabled,
@@ -155,8 +157,26 @@ class MapPreview extends Component {
       optionValue_cropImage_zoom,
       optionValue_cropImage_percent_x,
       optionValue_cropImage_percent_y,
+      optionValue_rotateImage,
     } = this.props;
     const { canvasRef_source } = this;
+    let sourceImage = uploadedImage;
+    const rotation = optionValue_rotateImage || 0;
+    if (rotation) {
+      const rotatedCanvas = document.createElement("canvas");
+      if (rotation === 90 || rotation === 270) {
+        rotatedCanvas.width = uploadedImage.height;
+        rotatedCanvas.height = uploadedImage.width;
+      } else {
+        rotatedCanvas.width = uploadedImage.width;
+        rotatedCanvas.height = uploadedImage.height;
+      }
+      const rctx = rotatedCanvas.getContext("2d");
+      rctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+      rctx.rotate((rotation * Math.PI) / 180);
+      rctx.drawImage(uploadedImage, -uploadedImage.width / 2, -uploadedImage.height / 2);
+      sourceImage = rotatedCanvas;
+    }
     const ctx_source = canvasRef_source.current.getContext("2d");
     ctx_source.imageSmoothingEnabled = true;   // These two options keep the map preview consistent on Chrome(ium). Otherwise the first render after changing
     ctx_source.imageSmoothingQuality = "high"; // map x or z size is pixelated to a noticeably lower quality. This is not a solution to the cause but a
@@ -187,13 +207,13 @@ class MapPreview extends Component {
 
     switch (optionValue_cropImage) {
       case CropModes.OFF.uniqueId: {
-        ctx_source.drawImage(uploadedImage, 0, 0, ctx_source.canvas.width, ctx_source.canvas.height);
+        ctx_source.drawImage(sourceImage, 0, 0, ctx_source.canvas.width, ctx_source.canvas.height);
         break;
       }
       case CropModes.CENTER.uniqueId:
       case CropModes.MANUAL.uniqueId: {
-        const img_width = uploadedImage.width;
-        const img_height = uploadedImage.height;
+        const img_width = sourceImage.width;
+        const img_height = sourceImage.height;
         let samplingWidth;
         let samplingHeight;
         let samplingOffset_x;
@@ -213,7 +233,7 @@ class MapPreview extends Component {
           samplingOffset_y = Math.floor((optionValue_cropImage_percent_y * (img_height - samplingHeight)) / 100);
         }
         ctx_source.drawImage(
-          uploadedImage,
+          sourceImage,
           samplingOffset_x,
           samplingOffset_y,
           samplingWidth,

@@ -44,6 +44,7 @@ class MapartController extends Component {
     optionValue_cropImage_zoom: 10, // this gets scaled down by a factor of 10
     optionValue_cropImage_percent_x: 50,
     optionValue_cropImage_percent_y: 50,
+    optionValue_rotateImage: 0,
     optionValue_showGridOverlay: false,
     optionValue_staircasing: MapModes.SCHEMATIC_NBT.staircaseModes.VALLEY.uniqueId,
     optionValue_staircaseYPositive: true,
@@ -311,6 +312,10 @@ class MapartController extends Component {
     this.setState({
       optionValue_cropImage_percent_y: value,
     });
+  };
+
+  onOptionChange_rotateImage = (e) => {
+    this.setState({ optionValue_rotateImage: parseInt(e.target.value) });
   };
 
   onOptionChange_showGridOverlay = () => {
@@ -1305,6 +1310,7 @@ class MapartController extends Component {
             optionValue_cropImage_zoom={optionValue_cropImage_zoom}
             optionValue_cropImage_percent_x={optionValue_cropImage_percent_x}
             optionValue_cropImage_percent_y={optionValue_cropImage_percent_y}
+            optionValue_rotateImage={optionValue_rotateImage}
             optionValue_showGridOverlay={optionValue_showGridOverlay}
             optionValue_staircasing={optionValue_staircasing}
             optionValue_whereSupportBlocks={optionValue_whereSupportBlocks}
@@ -1351,6 +1357,8 @@ class MapartController extends Component {
               onOptionChange_cropImage_percent_x={this.onOptionChange_cropImage_percent_x}
               optionValue_cropImage_percent_y={optionValue_cropImage_percent_y}
               onOptionChange_cropImage_percent_y={this.onOptionChange_cropImage_percent_y}
+              optionValue_rotateImage={optionValue_rotateImage}
+              onOptionChange_rotateImage={this.onOptionChange_rotateImage}
               optionValue_showGridOverlay={optionValue_showGridOverlay}
               onOptionChange_showGridOverlay={this.onOptionChange_showGridOverlay}
               optionValue_staircasing={optionValue_staircasing}

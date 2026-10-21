@@ -37,6 +37,8 @@ class MapSettings extends Component {
       onOptionChange_cropImage_percent_x,
       optionValue_cropImage_percent_y,
       onOptionChange_cropImage_percent_y,
+      optionValue_rotateImage,
+      onOptionChange_rotateImage,
       optionValue_showGridOverlay,
       onOptionChange_showGridOverlay,
       optionValue_staircasing,
@@ -268,6 +270,18 @@ class MapSettings extends Component {
           </tbody>
         </table>
       </div>
+    );
+    const setting_rotate = (
+      <React.Fragment>
+        <b>{"Rotate:"}</b>{" "}
+        <select value={optionValue_rotateImage} onChange={onOptionChange_rotateImage}>
+          <option value={0}>{"0°"}</option>
+          <option value={90}>{"90°"}</option>
+          <option value={180}>{"180°"}</option>
+          <option value={270}>{"270°"}</option>
+        </select>
+        <br />
+      </React.Fragment>
     );
     const setting_grid = (
       <React.Fragment>
@@ -903,6 +917,7 @@ class MapSettings extends Component {
         {setting_version}
         {setting_mapSize}
         {settingGroup_cropping}
+        {setting_rotate}
         {setting_grid}
         {setting_staircasing}
         {settings_mapModeConditional}
