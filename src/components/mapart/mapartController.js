@@ -1118,6 +1118,7 @@ class MapartController extends Component {
       optionValue_cropImage_zoom,
       optionValue_cropImage_percent_x,
       optionValue_cropImage_percent_y,
+      optionValue_rotateImage,
       optionValue_showGridOverlay,
       optionValue_staircasing,
       optionValue_whereSupportBlocks,
