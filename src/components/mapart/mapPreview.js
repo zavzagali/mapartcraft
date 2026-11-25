@@ -64,6 +64,7 @@ class MapPreview extends Component {
     const propChanges = [
       prevProps.coloursJSON === newProps.coloursJSON,
       prevProps.selectedBlocks === newProps.selectedBlocks,
+      prevProps.blockReplacements === newProps.blockReplacements,
       prevProps.optionValue_modeNBTOrMapdat === newProps.optionValue_modeNBTOrMapdat,
       prevProps.optionValue_mapSize_x === newProps.optionValue_mapSize_x,
       prevProps.optionValue_mapSize_y === newProps.optionValue_mapSize_y,
@@ -257,6 +258,7 @@ class MapPreview extends Component {
     const {
       coloursJSON,
       selectedBlocks,
+      blockReplacements,
       optionValue_modeNBTOrMapdat,
       optionValue_mapSize_x,
       optionValue_mapSize_y,
@@ -307,6 +309,7 @@ class MapPreview extends Component {
         DitherMethods: DitherMethods,
         canvasImageData: canvasImageData,
         selectedBlocks: selectedBlocks,
+        blockReplacements: blockReplacements,
         optionValue_modeNBTOrMapdat: optionValue_modeNBTOrMapdat,
         optionValue_mapSize_x: optionValue_mapSize_x,
         optionValue_mapSize_y: optionValue_mapSize_y,

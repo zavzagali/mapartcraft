@@ -5,6 +5,7 @@ var ColourMethods;
 var DitherMethods;
 var canvasImageData;
 var selectedBlocks;
+var blockReplacements; // source colourSetId -> { colourSetId, blockId } used everywhere instead
 var optionValue_modeNBTOrMapdat;
 var optionValue_mapSize_x;
 var optionValue_mapSize_y;
@@ -480,8 +481,17 @@ function exactRGBToColourSetIdAndTone(pixelRGB) {
   return exactColourCache.get(RGBBinary);
 }
 
+function getEffectiveBlockId(colourSetId) {
+  const replacement = blockReplacements[colourSetId];
+  if (replacement && coloursJSON[replacement.colourSetId] && replacement.blockId in coloursJSON[replacement.colourSetId].blocks) {
+    return { colourSetId: replacement.colourSetId, blockId: replacement.blockId };
+  }
+  return { colourSetId: colourSetId, blockId: selectedBlocks[colourSetId] };
+}
+
 function isSupportBlockMandatoryForColourSetIdAndTone(colourSetIdAndTone) {
-  return coloursJSON[colourSetIdAndTone.colourSetId].blocks[selectedBlocks[colourSetIdAndTone.colourSetId]].supportBlockMandatory;
+  const effectiveBlock = getEffectiveBlockId(colourSetIdAndTone.colourSetId);
+  return coloursJSON[effectiveBlock.colourSetId].blocks[effectiveBlock.blockId].supportBlockMandatory;
 }
 
 function colourSetIdAndToneToRGB(colourSetId, tone) {
@@ -970,6 +980,7 @@ onmessage = (e) => {
   DitherMethods = e.data.body.DitherMethods;
   canvasImageData = e.data.body.canvasImageData;
   selectedBlocks = e.data.body.selectedBlocks;
+  blockReplacements = e.data.body.blockReplacements || {};
   optionValue_modeNBTOrMapdat = e.data.body.optionValue_modeNBTOrMapdat;
   optionValue_mapSize_x = e.data.body.optionValue_mapSize_x;
   optionValue_mapSize_y = e.data.body.optionValue_mapSize_y;

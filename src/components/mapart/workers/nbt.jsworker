@@ -9,7 +9,17 @@ var optionValue_supportBlock;
 var pixelsData;
 var maps;
 var currentSelectedBlocks;
+var blockReplacements; // source colourSetId -> { colourSetId, blockId } used everywhere instead
 // end onmessage variables
+
+// Block actually placed for a colour set, taking any global replacement into account.
+function getEffectiveBlockId(colourSetId) {
+  const replacement = blockReplacements[colourSetId];
+  if (replacement && coloursJSON[replacement.colourSetId] && replacement.blockId in coloursJSON[replacement.colourSetId].blocks) {
+    return { colourSetId: replacement.colourSetId, blockId: replacement.blockId };
+  }
+  return { colourSetId: colourSetId, blockId: currentSelectedBlocks[colourSetId] };
+}
 
 var exactColourCache = new Map(); // for mapping RGB that exactly matches in coloursJSON to colourSetId and tone
 
@@ -313,10 +323,12 @@ class Map_NBT {
         };
         // we expect the support block to be something non-exotic with no properties eg netherrack
       } else {
-        let blockNBTData = coloursJSON[colourSetId].blocks[currentSelectedBlocks[colourSetId]].validVersions[optionValue_version.MCVersion];
+        const effectiveBlock = getEffectiveBlockId(colourSetId);
+        const effectiveBlockVersions = coloursJSON[effectiveBlock.colourSetId].blocks[effectiveBlock.blockId].validVersions;
+        let blockNBTData = effectiveBlockVersions[optionValue_version.MCVersion];
         if (typeof blockNBTData === "string") {
           // this is of the form eg "&1.12.2"
-          blockNBTData = coloursJSON[colourSetId].blocks[currentSelectedBlocks[colourSetId]].validVersions[blockNBTData.slice(1)];
+          blockNBTData = effectiveBlockVersions[blockNBTData.slice(1)];
         }
         paletteItemToPush.Name = {
           type: TagTypes.string,
@@ -815,7 +827,8 @@ function exactRGBToColourSetIdAndTone(pixelRGB) {
 }
 
 function isSupportBlockMandatoryForColourSetIdAndTone(colourSetIdAndTone) {
-  return coloursJSON[colourSetIdAndTone.colourSetId].blocks[currentSelectedBlocks[colourSetIdAndTone.colourSetId]].supportBlockMandatory;
+  const effectiveBlock = getEffectiveBlockId(colourSetIdAndTone.colourSetId);
+  return coloursJSON[effectiveBlock.colourSetId].blocks[effectiveBlock.blockId].supportBlockMandatory;
 }
 
 function mergeMaps() {
@@ -883,6 +896,7 @@ onmessage = (e) => {
   pixelsData = e.data.body.pixelsData;
   maps = e.data.body.maps;
   currentSelectedBlocks = e.data.body.currentSelectedBlocks;
+  blockReplacements = e.data.body.blockReplacements || {};
 
   const headerMessage = e.data.head;
 

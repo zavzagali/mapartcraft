@@ -210,7 +210,14 @@
     "SHOW-PER-SPLIT-TT": "For material reuse with locked maps",
     "REFRESH-MATERIALS": "REFRESH MATERIALS",
     "REFRESH-MATERIALS-TT": "Refresh materials list",
-    "COPY-CLIPBOARD": "Copy to clipboard"
+    "COPY-CLIPBOARD": "Copy to clipboard",
+    "BLOCK-BLACKLIST-TT": "Click the block to blacklist it (set to barrier)",
+    "REPLACE": "Replace block",
+    "REPLACE-TT": "Pick a new block from the left section to use everywhere this block is used in the map",
+    "REPLACE-SELECT": "Select a replacement for {0} from the left section",
+    "REPLACE-CANCEL": "Cancel replacement",
+    "CLEAR-REPLACEMENT": "Remove replacement (restore original block)",
+    "REPLACED-WITH": "Replaces {0} with {1}"
   },
   "VIEW-ONLINE": {
     "TITLE": "VIEW ONLINE",

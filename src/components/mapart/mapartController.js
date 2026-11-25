@@ -31,6 +31,10 @@ class MapartController extends Component {
   state = {
     coloursJSON: null,
     selectedBlocks: {},
+    // source colourSetId -> { colourSetId, blockId } of the block to use everywhere the source is used
+    blockReplacements: {},
+    // materials row currently waiting for a replacement block to be picked in the left section
+    replacingColourSetId: null,
     showingJSONExport: false,
     jsonExportText: "",
     showingJSONImport: false,
@@ -182,13 +186,21 @@ class MapartController extends Component {
     document.addEventListener("drop", this.eventListener_drop);
 
     document.addEventListener("paste", this.eventListener_paste);
+    document.addEventListener("keydown", this.eventListener_keydown);
   }
 
   componentWillUnmount() {
     document.removeEventListener("dragover", this.eventListener_dragover);
     document.removeEventListener("drop", this.eventListener_drop);
     document.removeEventListener("paste", this.eventListener_paste);
+    document.removeEventListener("keydown", this.eventListener_keydown);
   }
+
+  eventListener_keydown = (e) => {
+    if (e.key === "Escape" && this.state.replacingColourSetId !== null) {
+      this.handleCancelReplaceBlock();
+    }
+  };
 
   onFileDialogEvent = (e) => {
     const files = e.target.files;
@@ -215,13 +227,64 @@ class MapartController extends Component {
   handleChangeColourSetBlock = (colourSetId, blockId) => {
     let selectedBlocks = { ...this.state.selectedBlocks };
     selectedBlocks[colourSetId] = blockId;
+    // blacklisting a colour set removes its material row, so any replacement for it becomes stale
+    let blockReplacements = this.state.blockReplacements;
+    if (blockId === "-1" && colourSetId in blockReplacements) {
+      blockReplacements = { ...blockReplacements };
+      delete blockReplacements[colourSetId];
+    }
     this.setState({
       selectedBlocks,
+      blockReplacements,
     });
+  };
+
+  handleStartReplaceBlock = (colourSetId) => {
+    this.setState((currentState) => ({
+      replacingColourSetId: currentState.replacingColourSetId === colourSetId ? null : colourSetId,
+    }));
+  };
+
+  handleCancelReplaceBlock = () => {
+    this.setState({ replacingColourSetId: null });
+  };
+
+  handleReplaceBlock = (colourSetId, blockId) => {
+    const { replacingColourSetId } = this.state;
+    if (replacingColourSetId === null) return;
+    // picking "None" in the left section removes the replacement instead of setting a barrier
+    const blockReplacements = { ...this.state.blockReplacements };
+    if (blockId === "-1") {
+      delete blockReplacements[replacingColourSetId];
+    } else {
+      blockReplacements[replacingColourSetId] = { colourSetId, blockId };
+    }
+    this.setState((currentState) => ({
+      blockReplacements,
+      replacingColourSetId: null,
+      // support block counts depend on the effective block's supportBlockMandatory flag
+      mapPreviewRegenerateCounter: currentState.mapPreviewRegenerateCounter + 1,
+    }));
+  };
+
+  handleClearBlockReplacement = (colourSetId) => {
+    const blockReplacements = { ...this.state.blockReplacements };
+    delete blockReplacements[colourSetId];
+    this.setState((currentState) => ({
+      blockReplacements,
+      replacingColourSetId: currentState.replacingColourSetId === colourSetId ? null : currentState.replacingColourSetId,
+      mapPreviewRegenerateCounter: currentState.mapPreviewRegenerateCounter + 1,
+    }));
+  };
+
+  clearBlockReplacements = () => {
+    if (Object.keys(this.state.blockReplacements).length === 0) return;
+    this.setState({ blockReplacements: {}, replacingColourSetId: null, mapPreviewRegenerateCounter: this.state.mapPreviewRegenerateCounter + 1 });
   };
 
   handleChangeColourSetBlocks = (setsAndBlocks) => {
     const { coloursJSON, optionValue_version } = this.state;
+    this.clearBlockReplacements();
     let selectedBlocks = {};
     for (const colourSetId of Object.keys(coloursJSON)) {
       selectedBlocks[colourSetId] = "-1";
@@ -268,7 +331,23 @@ class MapartController extends Component {
           selectedBlocks[colourSetId] = "-1";
         }
       }
-      return { optionValue_version: supportedVersionFound, selectedBlocks };
+      // drop replacements whose block is not available in the newly selected version
+      let blockReplacements = { ...currentState.blockReplacements };
+      let didDropReplacement = false;
+      for (const [sourceColourSetId, replacement] of Object.entries(blockReplacements)) {
+        const replacementBlock = coloursJSON[replacement.colourSetId] && coloursJSON[replacement.colourSetId].blocks[replacement.blockId];
+        if (!replacementBlock || !Object.keys(replacementBlock.validVersions).includes(mcVersion)) {
+          delete blockReplacements[sourceColourSetId];
+          didDropReplacement = true;
+        }
+      }
+      return {
+        optionValue_version: supportedVersionFound,
+        selectedBlocks,
+        blockReplacements,
+        replacingColourSetId: null,
+        mapPreviewRegenerateCounter: didDropReplacement ? currentState.mapPreviewRegenerateCounter + 1 : currentState.mapPreviewRegenerateCounter,
+      };
     });
   };
 
@@ -891,9 +970,13 @@ class MapartController extends Component {
         }
       }
     }
-    this.setState({
+    this.setState((currentState) => ({
       coloursJSON: coloursJSON_new,
       selectedBlocks: selectedBlocks_new,
+      blockReplacements: {},
+      replacingColourSetId: null,
+      mapPreviewRegenerateCounter:
+        Object.keys(currentState.blockReplacements).length !== 0 ? currentState.mapPreviewRegenerateCounter + 1 : currentState.mapPreviewRegenerateCounter,
       currentMaterialsData: {
         pixelsData: null,
         maps: [[]],
@@ -901,7 +984,7 @@ class MapartController extends Component {
       },
       showingJSONImport: false,
       jsonImportText: "",
-    });
+    }));
   };
 
   URLToPreset = (encodedPreset) => {
@@ -969,6 +1052,7 @@ class MapartController extends Component {
 
   handleSetMapMaterials = (currentMaterialsData) => {
     let selectedBlocks = this.state.selectedBlocks;
+    let blockReplacements = this.state.blockReplacements;
     let didAutoBlacklist = false;
     if (this.state.optionValue_minimumBlockCountEnabled && this.state.optionValue_minimumBlockCount > 0) {
       const totals = {};
@@ -982,6 +1066,10 @@ class MapartController extends Component {
       for (const [colourSetId, count] of Object.entries(totals)) {
         if (count < this.state.optionValue_minimumBlockCount && selectedBlocks[colourSetId] !== "-1") {
           selectedBlocks = { ...selectedBlocks, [colourSetId]: "-1" };
+          if (colourSetId in blockReplacements) {
+            blockReplacements = { ...blockReplacements };
+            delete blockReplacements[colourSetId];
+          }
           didAutoBlacklist = true;
         }
       }
@@ -989,6 +1077,7 @@ class MapartController extends Component {
     const nextRegenerateCounter = didAutoBlacklist ? this.state.mapPreviewRegenerateCounter + 1 : this.state.mapPreviewRegenerateCounter;
     this.setState({
       selectedBlocks,
+      blockReplacements,
       currentMaterialsData: currentMaterialsData,
       mapPreviewWorker_inProgress: false,
       mapPreviewRegenerateCounter: nextRegenerateCounter,
@@ -1061,7 +1150,14 @@ class MapartController extends Component {
     customBlocks_new.push([block_colourSetId, blockToAdd]);
 
     this.setState((currentState) => {
-      return { coloursJSON: this.getMergedColoursJSON(customBlocks_new), selectedBlocks: { ...currentState.selectedBlocks, [block_colourSetId]: "-1" } };
+      const hadReplacements = Object.keys(currentState.blockReplacements).length !== 0;
+      return {
+        coloursJSON: this.getMergedColoursJSON(customBlocks_new),
+        selectedBlocks: { ...currentState.selectedBlocks, [block_colourSetId]: "-1" },
+        blockReplacements: {},
+        replacingColourSetId: null,
+        mapPreviewRegenerateCounter: hadReplacements ? currentState.mapPreviewRegenerateCounter + 1 : currentState.mapPreviewRegenerateCounter,
+      };
     });
     CookieManager.setCookie("mapartcraft_customBlocks", JSON.stringify(customBlocks_new));
   };
@@ -1091,9 +1187,13 @@ class MapartController extends Component {
     );
 
     this.setState((currentState) => {
+      const hadReplacements = Object.keys(currentState.blockReplacements).length !== 0;
       return {
         coloursJSON: this.getMergedColoursJSON(customBlocks_new),
         selectedBlocks: { ...currentState.selectedBlocks, [block_colourSetId]: "-1" },
+        blockReplacements: {},
+        replacingColourSetId: null,
+        mapPreviewRegenerateCounter: hadReplacements ? currentState.mapPreviewRegenerateCounter + 1 : currentState.mapPreviewRegenerateCounter,
         currentMaterialsData: {
           // reset currentMaterialsData as materials.js uses a cached version of materials which could contain blocks which no longer exist
           pixelsData: null,
@@ -1110,6 +1210,8 @@ class MapartController extends Component {
     const {
       coloursJSON,
       selectedBlocks,
+      blockReplacements,
+      replacingColourSetId,
       optionValue_version,
       optionValue_modeNBTOrMapdat,
       optionValue_mapSize_x,
@@ -1167,6 +1269,10 @@ class MapartController extends Component {
           optionValue_staircasing={optionValue_staircasing}
           effectiveToneKeys={this.getActiveToneKeys()}
           selectedBlocks={selectedBlocks}
+          blockReplacements={blockReplacements}
+          replacingColourSetId={replacingColourSetId}
+          onReplaceBlock={this.handleReplaceBlock}
+          onCancelReplaceBlock={this.handleCancelReplaceBlock}
           presets={presets}
           selectedPresetName={selectedPresetName}
           canDeletePreset={this.canDeletePreset}
@@ -1303,6 +1409,7 @@ class MapartController extends Component {
             getLocaleString={getLocaleString}
             coloursJSON={coloursJSON}
             selectedBlocks={selectedBlocks}
+            blockReplacements={blockReplacements}
             optionValue_version={optionValue_version}
             optionValue_modeNBTOrMapdat={optionValue_modeNBTOrMapdat}
             optionValue_mapSize_x={optionValue_mapSize_x}
@@ -1419,6 +1526,7 @@ class MapartController extends Component {
               getLocaleString={getLocaleString}
               coloursJSON={coloursJSON}
               selectedBlocks={selectedBlocks}
+              blockReplacements={blockReplacements}
               optionValue_version={optionValue_version}
               optionValue_modeNBTOrMapdat={optionValue_modeNBTOrMapdat}
               optionValue_mapSize_x={optionValue_mapSize_x}
@@ -1462,6 +1570,10 @@ class MapartController extends Component {
               optionValue_supportBlock={optionValue_supportBlock}
               currentMaterialsData={currentMaterialsData}
               selectedBlocks={selectedBlocks}
+              blockReplacements={blockReplacements}
+              replacingColourSetId={replacingColourSetId}
+              onStartReplaceBlock={this.handleStartReplaceBlock}
+              onClearBlockReplacement={this.handleClearBlockReplacement}
               onChangeColourSetBlock={this.handleChangeColourSetBlock}
             />
           ) : null}

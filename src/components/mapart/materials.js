@@ -98,12 +98,15 @@ class Materials extends Component {
   }
 
   nbtNameToColourSetId(colourSetId) {
-    const { coloursJSON, optionValue_version, currentMaterialsData } = this.props;
-    const colourSet = coloursJSON[colourSetId];
-    const selection = currentMaterialsData.currentSelectedBlocks[colourSetId];
+    const { coloursJSON, optionValue_version, selectedBlocks, blockReplacements = {} } = this.props;
+    const replacement = blockReplacements[colourSetId];
+    const effectiveColourSetId = replacement ? replacement.colourSetId : colourSetId;
+    const selection = replacement ? replacement.blockId : selectedBlocks[colourSetId];
 
-    if (selection < 0) return null;
+    if (selection === "-1") return null;
 
+    const colourSet = coloursJSON[effectiveColourSetId];
+    if (!colourSet || !(selection in colourSet.blocks)) return null;
     const block = colourSet.blocks[selection];
     if (!(optionValue_version.MCVersion in block.validVersions)) {
       return null;
@@ -121,17 +124,20 @@ class Materials extends Component {
   copyToClipboard(nonZeroMaterialsItems, supportBlockCount) {
     const { optionValue_supportBlock} = this.props;
 
-    const mergedList = new Array(nonZeroMaterialsItems.length);
+    const mergedList = {};
 
     for (const [colourSetId, val] of Object.values(nonZeroMaterialsItems)) {
       const mcId = this.nbtNameToColourSetId(colourSetId);
-      mergedList[mcId] = val;
+      if (mcId === null) continue;
+      // replacements can make different colour sets resolve to the same block; add their counts together
+      mergedList[mcId] = (mergedList[mcId] || 0) + val;
     }
 
     mergedList[optionValue_supportBlock] = (mergedList[optionValue_supportBlock] || 0) + supportBlockCount;
 
     const counts = Object.fromEntries(
-      Object.entries(mergedList.sort((first, second) => second - first))
+      Object.entries(mergedList)
+      .sort((first, second) => second[1] - first[1])
       .map(([k, v]) => [k, this.formatMaterialCount(v)]));
 
     const NBSP = String.fromCharCode(160); //non-breaking space
@@ -179,7 +185,18 @@ class Materials extends Component {
   }
 
   render() {
-    const { getLocaleString, coloursJSON, optionValue_supportBlock, currentMaterialsData, selectedBlocks, onChangeColourSetBlock } = this.props;
+    const {
+      getLocaleString,
+      coloursJSON,
+      optionValue_supportBlock,
+      currentMaterialsData,
+      selectedBlocks,
+      blockReplacements = {},
+      replacingColourSetId = null,
+      onStartReplaceBlock,
+      onClearBlockReplacement,
+      onChangeColourSetBlock,
+    } = this.props;
     const { onlyMaxPerSplit } = this.state;
     const nonZeroMaterialsItems = this.getMaterialsCount_nonZeroMaterialsItems();
     const supportBlockCount = this.getMaterialsCount_supportBlock();
@@ -219,24 +236,52 @@ class Materials extends Component {
             )}
             {nonZeroMaterialsItems.map(([colourSetId, materialCount]) => {
               const blockId = selectedBlocks[colourSetId];
-              const tooltipText =
-                blockId === "-1"
-                  ? getLocaleString("NONE")
-                  : coloursJSON[colourSetId].blocks[blockId].displayName;
+              const replacement = blockReplacements[colourSetId];
+              const replacementIsValid =
+                replacement && coloursJSON[replacement.colourSetId] && replacement.blockId in coloursJSON[replacement.colourSetId].blocks;
+              const effectiveColourSetId = replacementIsValid ? replacement.colourSetId : colourSetId;
+              const effectiveBlockId = replacementIsValid ? replacement.blockId : blockId;
+              const originalName = blockId === "-1" ? getLocaleString("NONE") : coloursJSON[colourSetId].blocks[blockId].displayName;
+              const effectiveName =
+                effectiveBlockId === "-1" ? getLocaleString("NONE") : coloursJSON[effectiveColourSetId].blocks[effectiveBlockId].displayName;
+              const tooltipText = replacementIsValid
+                ? getLocaleString("MATERIALS/REPLACED-WITH").replace("{0}", originalName).replace("{1}", effectiveName)
+                : originalName;
               return (
                 <tr key={colourSetId}>
-                  <th
-                    style={{ cursor: "pointer" }}
-                    onClick={() => onChangeColourSetBlock(colourSetId, "-1")}
-                    title="Click to blacklist this block (set to barrier)"
-                  >                        <Tooltip tooltipText={tooltipText}>
-                          <BlockImage
-                            getLocaleString={getLocaleString}
-                            coloursJSON={coloursJSON}
-                            colourSetId={colourSetId}
-                            blockId={blockId}
-                          />
-                        </Tooltip>
+                  <th>
+                    <div className="materialBlockCell">
+                      <button
+                        type="button"
+                        className="materialReplaceButton"
+                        aria-label={getLocaleString("MATERIALS/REPLACE")}
+                        title={getLocaleString("MATERIALS/REPLACE-TT")}
+                        onClick={() => onStartReplaceBlock(colourSetId)}
+                      >
+                        {replacingColourSetId === colourSetId ? "⤴" : "⇄"}
+                      </button>
+                      <Tooltip tooltipText={tooltipText}>
+                        <BlockImage
+                          getLocaleString={getLocaleString}
+                          coloursJSON={coloursJSON}
+                          colourSetId={effectiveColourSetId}
+                          blockId={effectiveBlockId}
+                          title={getLocaleString("MATERIALS/BLOCK-BLACKLIST-TT")}
+                          style={{ cursor: "pointer" }}
+                          onClick={() => onChangeColourSetBlock(colourSetId, "-1")}
+                        />
+                      </Tooltip>
+                      {replacement && (
+                        <button
+                          type="button"
+                          className="materialClearReplacementButton"
+                          title={getLocaleString("MATERIALS/CLEAR-REPLACEMENT")}
+                          onClick={() => onClearBlockReplacement(colourSetId)}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </th>
                   <th>{this.formatMaterialCount(materialCount)}</th>
                 </tr>

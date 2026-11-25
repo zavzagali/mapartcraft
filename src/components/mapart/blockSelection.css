@@ -18,3 +18,18 @@
   flex-direction: row;
   flex-wrap: wrap;
 }
+
+.replaceBlockBanner {
+  background-color: #3a4a2c;
+  border: 1px solid #6ec06e;
+  border-radius: 3px;
+  padding: 0.4em 0.6em;
+  margin-bottom: 0.6em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.replaceBlockSource .colourSetBox {
+  outline: 2px solid #6ec06e;
+}

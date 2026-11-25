@@ -38,6 +38,7 @@ class GreenButtons extends Component {
     const {
       getLocaleString,
       coloursJSON,
+      blockReplacements,
       optionValue_version,
       optionValue_mapSize_x,
       optionValue_mapSize_y,
@@ -174,6 +175,7 @@ class GreenButtons extends Component {
         pixelsData: currentMaterialsData.pixelsData,
         maps: currentMaterialsData.maps,
         currentSelectedBlocks: currentMaterialsData.currentSelectedBlocks,
+        blockReplacements: blockReplacements,
       },
     });
   };

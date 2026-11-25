@@ -1,0 +1,22 @@
+.materialBlockCell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.materialReplaceButton,
+.materialClearReplacementButton {
+  padding: 0 0.3em;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.materialReplaceButton:hover,
+.materialClearReplacementButton:hover {
+  background-color: #4d6b34;
+}
+
+.materialClearReplacementButton {
+  color: #ff9a9a;
+}

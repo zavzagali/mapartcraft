@@ -63,6 +63,10 @@ class BlockSelection extends Component {
       onChangeColourSetBlock,
       optionValue_version,
       selectedBlocks,
+      blockReplacements = {},
+      replacingColourSetId = null,
+      onReplaceBlock,
+      onCancelReplaceBlock,
       presets,
       selectedPresetName,
       canDeletePreset,
@@ -77,6 +81,29 @@ class BlockSelection extends Component {
       handleDeleteCustomBlock,
     } = this.props;
     const { lastSelectedCustomBlock } = this.state;
+    const sourceBlockName =
+      replacingColourSetId !== null && selectedBlocks[replacingColourSetId] !== "-1"
+        ? coloursJSON[replacingColourSetId].blocks[selectedBlocks[replacingColourSetId]].displayName
+        : getLocaleString("NONE");
+    const replacementBanner =
+      replacingColourSetId !== null && (
+        <div className="replaceBlockBanner">
+          <span>{getLocaleString("MATERIALS/REPLACE-SELECT").replace("{0}", sourceBlockName)}</span>{" "}
+          <button type="button" onClick={onCancelReplaceBlock}>
+            {getLocaleString("MATERIALS/REPLACE-CANCEL")}
+          </button>
+        </div>
+      );
+    const onBlockClick = (colourSetId, blockId, block) => {
+      if (replacingColourSetId !== null) {
+        onReplaceBlock(colourSetId, blockId);
+      } else {
+        onChangeColourSetBlock(colourSetId, blockId);
+        if (block.presetIndex === "CUSTOM") {
+          this.setState({ lastSelectedCustomBlock: { colourSetId, blockId } });
+        }
+      }
+    };
     const presetsManagement = (
       <React.Fragment>
         <h2 id="blockselectiontitle">{getLocaleString("BLOCK-SELECTION/TITLE")}</h2>
@@ -125,7 +152,7 @@ class BlockSelection extends Component {
         {Object.entries(coloursJSON)
           .filter(([, colourSet]) => Object.values(colourSet.blocks).some((block) => Object.keys(block.validVersions).includes(optionValue_version.MCVersion)))
           .map(([colourSetId, colourSet]) => (
-            <div key={colourSetId} className="colourSet">
+            <div key={colourSetId} className={"colourSet" + (replacingColourSetId === colourSetId ? " replaceBlockSource" : "")}>
               {this.getColourSetBox(colourSet)}
               <label>
                 <Tooltip tooltipText={getLocaleString("NONE")}>
@@ -134,7 +161,7 @@ class BlockSelection extends Component {
                     coloursJSON={coloursJSON}
                     colourSetId={colourSetId}
                     blockId={"-1"}
-                    onClick={() => onChangeColourSetBlock(colourSetId, "-1")}
+                    onClick={() => onBlockClick(colourSetId, "-1", {})}
                     style={{
                       cursor: "pointer",
                       ...(selectedBlocks[colourSetId] === "-1" && {
@@ -178,12 +205,7 @@ class BlockSelection extends Component {
                           coloursJSON={coloursJSON}
                           colourSetId={colourSetId}
                           blockId={blockId}
-                          onClick={() => {
-                            onChangeColourSetBlock(colourSetId, blockId);
-                            if (block.presetIndex === "CUSTOM") {
-                              this.setState({ lastSelectedCustomBlock: { colourSetId, blockId } });
-                            }
-                          }}
+                          onClick={() => onBlockClick(colourSetId, blockId, block)}
                           style={{
                             cursor: "pointer",
                             ...(selectedBlocks[colourSetId] === blockId && {
@@ -192,6 +214,9 @@ class BlockSelection extends Component {
                                 backgroundColor: "#5e83e0",
                               }),
                             }),
+                            ...(Object.values(blockReplacements).some(
+                              (replacement) => replacement.colourSetId === colourSetId && replacement.blockId === blockId
+                            ) && { outline: "2px solid #6ec06e" }),
                           }}
                         />
                       </Tooltip>
@@ -205,6 +230,7 @@ class BlockSelection extends Component {
     return (
       <div className="section blockSelectionDiv">
         {presetsManagement}
+        {replacementBanner}
         {blockSelection}
         <BlockSelectionAddCustom
           getLocaleString={getLocaleString}
